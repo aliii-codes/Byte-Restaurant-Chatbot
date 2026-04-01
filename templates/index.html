@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Demo Diner — Byte AI Waiter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --void: #02040A;
+      --surface: #080B12;
+      --card: #0C101A;
+      --gold: #C9A84C;
+      --gold-dim: rgba(201,168,76,0.15);
+      --gold-glow: rgba(201,168,76,0.08);
+      --white: #F5F0E8;
+      --muted: rgba(245,240,232,0.45);
+      --border: rgba(201,168,76,0.15);
+      --font-head: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'DM Sans', sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    ::selection { background: rgba(201,168,76,0.25); color: var(--white); }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--void);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── LIQUID GLASS ── */
+    .glass {
+      background: rgba(255,255,255,0.012);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.08), 0 4px 32px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s var(--ease);
+    }
+    .glass::before {
+      content: '';
+      position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+      background: linear-gradient(160deg, rgba(201,168,76,0.3) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0) 60%, rgba(201,168,76,0.15) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+    }
+    .glass-strong {
+      background: rgba(255,255,255,0.018);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.12);
+      position: relative; overflow: hidden;
+      transition: all 0.4s var(--ease);
+    }
+    .glass-strong::before {
+      content: '';
+      position: absolute; inset: 0; border-radius: inherit; padding: 1.2px;
+      background: linear-gradient(160deg, rgba(201,168,76,0.5) 0%, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0) 50%, rgba(201,168,76,0.2) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+    }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 20px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(2,4,10,0.9) 0%, transparent 100%);
+    }
+    .nav-logo {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--white); font-style: normal; }
+    .nav-links {
+      display: flex; align-items: center; gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--white); }
+    .nav-cta {
+      background: var(--gold);
+      color: var(--void) !important;
+      padding: 10px 22px;
+      border-radius: 100px;
+      font-weight: 500 !important;
+      font-size: 13px !important;
+      letter-spacing: 0.05em !important;
+      text-transform: none !important;
+      transition: opacity 0.3s !important;
+    }
+    .nav-cta:hover { opacity: 0.85; color: var(--void) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,168,76,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 80% at 20% 80%, rgba(201,168,76,0.04) 0%, transparent 60%),
+        url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat;
+      filter: brightness(0.2);
+      transform: scale(1.05);
+      animation: slowZoom 20s ease-in-out infinite alternate;
+    }
+    @keyframes slowZoom {
+      from { transform: scale(1.05); }
+      to { transform: scale(1.12); }
+    }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(2,4,10,0.3) 0%, rgba(2,4,10,0.1) 40%, rgba(2,4,10,0.85) 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      text-align: center;
+      padding: 0 24px;
+      max-width: 800px;
+      animation: heroReveal 1.4s var(--ease) both;
+    }
+    @keyframes heroReveal {
+      from { opacity: 0; transform: translateY(40px); filter: blur(8px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--gold-glow);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 28px;
+      animation: heroReveal 1.4s var(--ease) 0.1s both;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 5px; height: 5px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .hero h1 {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: clamp(52px, 8vw, 96px);
+      font-weight: 300;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      margin-bottom: 20px;
+      animation: heroReveal 1.4s var(--ease) 0.2s both;
+    }
+    .hero h1 em { color: var(--gold); font-style: italic; }
+    .hero p {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 480px;
+      margin: 0 auto 40px;
+      animation: heroReveal 1.4s var(--ease) 0.3s both;
+    }
+    .hero-btns {
+      display: flex; align-items: center; gap: 14px;
+      justify-content: center;
+      animation: heroReveal 1.4s var(--ease) 0.4s both;
+    }
+    .btn-primary {
+      padding: 14px 32px;
+      border-radius: 100px;
+      background: var(--gold);
+      color: var(--void);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.3s, transform 0.3s var(--ease);
+    }
+    .btn-primary:hover { opacity: 0.88; transform: scale(1.02); }
+    .btn-ghost {
+      padding: 14px 32px;
+      border-radius: 100px;
+      background: transparent;
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 14px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.3s, transform 0.3s var(--ease);
+    }
+    .btn-ghost:hover { border-color: var(--gold); transform: scale(1.02); }
+
+    /* ── SCROLL REVEALS ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      filter: blur(6px);
+      transition: opacity 0.8s var(--ease), transform 0.8s var(--ease), filter 0.8s var(--ease);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+
+    /* ── SECTION BASE ── */
+    section { padding: 120px 40px; max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+      display: block;
+    }
+    .section-title {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 20px;
+    }
+    .section-sub {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+      max-width: 520px;
+    }
+
+    /* ── MENU SECTION ── */
+    .menu-section { padding: 120px 40px; max-width: 1200px; margin: 0 auto; }
+    .menu-header { text-align: center; margin-bottom: 72px; }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .menu-category {
+      border-radius: 20px;
+      padding: 28px;
+      transition: transform 0.4s var(--ease);
+    }
+    .menu-category:hover { transform: translateY(-4px); }
+    .menu-cat-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .menu-cat-name {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item-name { font-size: 14px; color: var(--white); }
+    .menu-item-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .menu-item-price { font-size: 14px; color: var(--gold); font-weight: 500; flex-shrink: 0; margin-left: 12px; }
+
+    /* ── AMBIANCE SECTION ── */
+    .ambiance-section {
+      padding: 0 40px 120px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .ambiance-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .ambiance-big {
+      border-radius: 24px;
+      overflow: hidden;
+      height: 560px;
+      position: relative;
+    }
+    .ambiance-big img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.8s var(--ease);
+    }
+    .ambiance-big:hover img { transform: scale(1.04); }
+    .ambiance-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(2,4,10,0.85) 0%, transparent 60%);
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 32px;
+    }
+    .ambiance-overlay h3 {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 32px;
+      font-weight: 300;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .ambiance-overlay p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .ambiance-small-grid {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 16px;
+    }
+    .ambiance-small {
+      border-radius: 20px;
+      overflow: hidden;
+      height: 272px;
+      position: relative;
+    }
+    .ambiance-small img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.8s var(--ease);
+    }
+    .ambiance-small:hover img { transform: scale(1.05); }
+    .ambiance-small-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(2,4,10,0.75) 0%, transparent 60%);
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 20px;
+    }
+    .ambiance-small-overlay span {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+    .ambiance-small-overlay h4 {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--white);
+    }
+
+    /* ── INFO STRIP ── */
+    .info-strip {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 32px 40px;
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      max-width: 100%;
+    }
+    .info-item {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .info-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      background: var(--gold-glow);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .info-label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 3px; }
+    .info-val { font-size: 14px; color: var(--white); }
+
+    /* ── CHATBOT ── */
+    .chat-section {
+      padding: 120px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      gap: 64px;
+      align-items: center;
+    }
+    .chat-left { }
+    .chat-left .section-title { margin-bottom: 16px; }
+    .chat-left p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+      margin-bottom: 32px;
+    }
+    .chat-features { display: flex; flex-direction: column; gap: 12px; }
+    .chat-feature {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 13px; color: var(--muted);
+    }
+    .chat-feature::before {
+      content: '✦';
+      color: var(--gold);
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    .chat-right { }
+    .chat-container {
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .chat-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+    }
+    .chat-avatar {
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--gold), #8B6914);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .chat-header-info h3 {
+      font-size: 15px; font-weight: 500; color: var(--white);
+      margin-bottom: 3px;
+    }
+    .chat-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: #4ADE80;
+    }
+    .status-dot {
+      width: 5px; height: 5px;
+      background: #4ADE80;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    .chat-info-bar {
+      padding: 10px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex; gap: 20px;
+    }
+    .chat-info-pill {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .messages {
+      height: 360px;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .messages::-webkit-scrollbar { width: 3px; }
+    .messages::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 4px; }
+    .msg {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      animation: msgIn 0.3s var(--ease) both;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .msg.bot {
+      background: rgba(201,168,76,0.06);
+      border: 1px solid rgba(201,168,76,0.12);
+      color: var(--white);
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+    }
+    .msg.user {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--white);
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+    .typing {
+      display: flex; gap: 5px;
+      padding: 14px 16px;
+      background: rgba(201,168,76,0.06);
+      border: 1px solid rgba(201,168,76,0.12);
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+      width: fit-content;
+    }
+    .typing span {
+      width: 6px; height: 6px;
+      background: rgba(201,168,76,0.4);
+      border-radius: 50%;
+      animation: typingBounce 1s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); background: rgba(201,168,76,0.4); }
+      30% { transform: translateY(-6px); background: var(--gold); }
+    }
+    .chat-input-area {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 10px;
+    }
+    .chat-input {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    .chat-input:focus { border-color: rgba(201,168,76,0.35); }
+    .chat-input::placeholder { color: rgba(255,255,255,0.2); }
+    .chat-send {
+      background: var(--gold);
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      color: var(--void);
+      font-size: 16px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s var(--ease);
+      flex-shrink: 0;
+    }
+    .chat-send:hover { opacity: 0.88; transform: scale(1.05); }
+    .chat-send:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 80px 40px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 64px;
+      margin-bottom: 64px;
+    }
+    .footer-brand h2 {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--white);
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    .footer-brand h2 em { color: var(--gold); }
+    .footer-brand p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 28px;
+      max-width: 320px;
+    }
+    .footer-email-row {
+      display: flex; gap: 8px;
+    }
+    .footer-input {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 16px;
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    .footer-input:focus { border-color: rgba(201,168,76,0.4); }
+    .footer-input::placeholder { color: rgba(255,255,255,0.2); }
+    .footer-sub-btn {
+      background: var(--gold);
+      border: none;
+      border-radius: 10px;
+      padding: 11px 20px;
+      color: var(--void);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+    .footer-sub-btn:hover { opacity: 0.85; }
+    .footer-col h4 {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .footer-col a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.3s;
+    }
+    .footer-col a:hover { color: var(--white); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 28px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer-bottom p { font-size: 12px; color: rgba(255,255,255,0.2); }
+    .footer-powered {
+      font-size: 12px;
+      color: rgba(255,255,255,0.2);
+    }
+    .footer-powered span {
+      color: var(--gold);
+      font-family: var(--font-head);
+      font-style: italic;
+    }
+
+    /* ── AMBIENT ORBS ── */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(80px);
+      z-index: 0;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .nav-links { display: none; }
+      section, .menu-section, .ambiance-section { padding: 80px 20px; }
+      .chat-section { grid-template-columns: 1fr; padding: 80px 20px; gap: 40px; }
+      .ambiance-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; gap: 40px; }
+      .info-strip { flex-direction: column; gap: 24px; padding: 32px 20px; }
+      .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav>
+    <a href="#" class="nav-logo">Demo <span>Diner</span></a>
+    <ul class="nav-links">
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#ambiance">Ambiance</a></li>
+      <li><a href="#chat">Reserve</a></li>
+      <li><a href="#chat" class="nav-cta">Ask Byte ↗</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="orb" style="width:600px;height:600px;background:rgba(201,168,76,0.04);top:10%;left:30%;"></div>
+    <div class="hero-content">
+      <div class="hero-badge">Now Open • Fine Casual Dining</div>
+      <h1>Where Every Meal<br/>Becomes a <em>Memory</em></h1>
+      <p>Experience the perfect blend of bold flavors, elegant atmosphere, and warm hospitality — guided by Byte, your AI waiter.</p>
+      <div class="hero-btns">
+        <a href="#chat" class="btn-primary">Chat with Byte</a>
+        <a href="#menu" class="btn-ghost">View Menu</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO STRIP -->
+  <div class="info-strip reveal">
+    <div class="info-item">
+      <div class="info-icon">🕐</div>
+      <div>
+        <div class="info-label">Hours</div>
+        <div class="info-val">Mon–Fri 11AM–10PM • Sat–Sun 10AM–11PM</div>
+      </div>
+    </div>
+    <div class="info-item">
+      <div class="info-icon">📍</div>
+      <div>
+        <div class="info-label">Location</div>
+        <div class="info-val">123 Food Street, Downtown City</div>
+      </div>
+    </div>
+    <div class="info-item">
+      <div class="info-icon">📞</div>
+      <div>
+        <div class="info-label">Reservations</div>
+        <div class="info-val">+1 (555) 012-3456</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU SECTION -->
+  <div class="menu-section" id="menu">
+    <div class="menu-header reveal">
+      <span class="section-label">Our Offerings</span>
+      <h2 class="section-title">Crafted with Passion,<br/>Served with Soul</h2>
+    </div>
+    <div class="menu-grid reveal">
+
+      <div class="menu-category glass" style="border-radius:20px;">
+        <span class="menu-cat-icon">🥗</span>
+        <div class="menu-cat-name">Starters</div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Garlic Bread</div><div class="menu-item-desc">Toasted with herb butter</div></div>
+          <div class="menu-item-price">$3.99</div>
+        </div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Soup of the Day</div><div class="menu-item-desc">Chef's daily special</div></div>
+          <div class="menu-item-price">$4.99</div>
+        </div>
+      </div>
+
+      <div class="menu-category glass" style="border-radius:20px;">
+        <span class="menu-cat-icon">🍽️</span>
+        <div class="menu-cat-name">Mains</div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Grilled Chicken</div><div class="menu-item-desc">Rice and garden salad</div></div>
+          <div class="menu-item-price">$12.99</div>
+        </div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Beef Burger</div><div class="menu-item-desc">Juicy patty with fries</div></div>
+          <div class="menu-item-price">$10.99</div>
+        </div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Veggie Pasta</div><div class="menu-item-desc">Penne marinara</div></div>
+          <div class="menu-item-price">$9.99</div>
+        </div>
+      </div>
+
+      <div class="menu-category glass" style="border-radius:20px;">
+        <span class="menu-cat-icon">🍹</span>
+        <div class="menu-cat-name">Drinks</div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Soft Drink</div><div class="menu-item-desc">Coke, Sprite, or Fanta</div></div>
+          <div class="menu-item-price">$1.99</div>
+        </div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Fresh Juice</div><div class="menu-item-desc">Orange, Mango, or Apple</div></div>
+          <div class="menu-item-price">$3.49</div>
+        </div>
+      </div>
+
+      <div class="menu-category glass" style="border-radius:20px;">
+        <span class="menu-cat-icon">🍰</span>
+        <div class="menu-cat-name">Desserts</div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Chocolate Lava Cake</div><div class="menu-item-desc">Warm with ice cream</div></div>
+          <div class="menu-item-price">$5.99</div>
+        </div>
+        <div class="menu-item">
+          <div><div class="menu-item-name">Cheesecake</div><div class="menu-item-desc">Classic New York style</div></div>
+          <div class="menu-item-price">$4.99</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AMBIANCE -->
+  <div class="ambiance-section" id="ambiance">
+    <div style="margin-bottom:48px;" class="reveal">
+      <span class="section-label">The Experience</span>
+      <h2 class="section-title">An Atmosphere<br/>Worth Savoring</h2>
+    </div>
+    <div class="ambiance-grid reveal">
+      <div class="ambiance-big">
+        <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop" alt="Restaurant interior"/>
+        <div class="ambiance-overlay">
+          <h3>The Main Hall</h3>
+          <p>Where candlelight meets conversation — a space designed for moments that linger.</p>
+        </div>
+      </div>
+      <div class="ambiance-small-grid">
+        <div class="ambiance-small">
+          <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=800&auto=format&fit=crop" alt="Food"/>
+          <div class="ambiance-small-overlay">
+            <span>Signature Dish</span>
+            <h4>Chef's Creation</h4>
+          </div>
+        </div>
+        <div class="ambiance-small">
+          <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=800&auto=format&fit=crop" alt="Bar"/>
+          <div class="ambiance-small-overlay">
+            <span>The Bar</span>
+            <h4>Crafted Cocktails</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHATBOT SECTION -->
+  <div class="chat-section" id="chat">
+    <div class="chat-left reveal">
+      <span class="section-label">AI Waiter</span>
+      <h2 class="section-title">Meet <em style="font-family:var(--font-head);color:var(--gold);">Byte</em> —<br/>Your Table's<br/>Digital Companion</h2>
+      <p>Ask Byte anything about our menu, today's specials, dietary options, or opening hours. Instant answers, zero wait time.</p>
+      <div class="chat-features">
+        <div class="chat-feature">Knows the full menu inside out</div>
+        <div class="chat-feature">Remembers your conversation context</div>
+        <div class="chat-feature">Aware of today's date & hours</div>
+        <div class="chat-feature">Redirects off-topic gracefully</div>
+      </div>
+    </div>
+    <div class="chat-right reveal">
+      <div class="chat-container glass-strong" style="border-radius:24px;">
+        <div class="chat-header">
+          <div class="chat-avatar">🍽️</div>
+          <div class="chat-header-info">
+            <h3>Byte — AI Waiter</h3>
+            <div class="chat-status"><div class="status-dot"></div> Online & Ready</div>
+          </div>
+        </div>
+        <div class="chat-info-bar">
+          <div class="chat-info-pill">🕐 Mon–Fri 11AM–10PM</div>
+          <div class="chat-info-pill">📍 Downtown City</div>
+        </div>
+        <div class="messages" id="messages">
+          <div class="msg bot">Hey! 👋 I'm Byte, your AI waiter at Demo Diner. Ask me about our menu, hours, or location!</div>
+        </div>
+        <div class="chat-input-area">
+          <input class="chat-input" type="text" id="input" placeholder="Ask Byte anything..."/>
+          <button class="chat-send" id="sendBtn">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand reveal">
+        <h2>A table is waiting<br/>just for <em>you.</em></h2>
+        <p>Subscribe for seasonal menus, exclusive events, and chef's specials delivered straight to your inbox.</p>
+        <div class="footer-email-row">
+          <input class="footer-input" type="email" placeholder="your@email.com"/>
+          <button class="footer-sub-btn">Subscribe</button>
+        </div>
+      </div>
+      <div class="footer-col reveal">
+        <h4>Dining</h4>
+        <ul>
+          <li><a href="#menu">Menu</a></li>
+          <li><a href="#ambiance">Ambiance</a></li>
+          <li><a href="#chat">Reservations</a></li>
+          <li><a href="#">Private Events</a></li>
+        </ul>
+      </div>
+      <div class="footer-col reveal">
+        <h4>About</h4>
+        <ul>
+          <li><a href="#">Our Story</a></li>
+          <li><a href="#">The Team</a></li>
+          <li><a href="#">Press</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 Demo Diner. All rights reserved.</p>
+      <p class="footer-powered">AI powered by <span>Byte</span> • Built by <span>Munaf Studios</span></p>
+    </div>
+  </footer>
+
+  <script>
+    // ── SCROLL REVEAL ──
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 80);
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '-40px' });
+    reveals.forEach(el => observer.observe(el));
+
+    // ── CHATBOT ──
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    let history = [];
+
+    function addMsg(text, role) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function showTyping() {
+      const div = document.createElement('div');
+      div.className = 'typing'; div.id = 'typing';
+      div.innerHTML = '<span></span><span></span><span></span>';
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function removeTyping() {
+      const t = document.getElementById('typing');
+      if (t) t.remove();
+    }
+
+    async function sendMessage() {
+      const msg = inputEl.value.trim();
+      if (!msg) return;
+      addMsg(msg, 'user');
+      inputEl.value = '';
+      sendBtn.disabled = true;
+      showTyping();
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, history })
+        });
+        const data = await res.json();
+        removeTyping();
+        addMsg(data.reply, 'bot');
+        history.push({ role: 'user', content: msg });
+        history.push({ role: 'assistant', content: data.reply });
+        if (history.length > 10) history = history.slice(-10);
+      } catch {
+        removeTyping();
+        addMsg('Oops, something went wrong. Try again!', 'bot');
+      }
+
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+  </script>
+</body>
+</html>

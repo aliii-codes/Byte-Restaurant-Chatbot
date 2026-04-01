@@ -1,0 +1,33 @@
+{
+  "categories": [
+    {
+      "name": "Starters",
+      "items": [
+        {"name": "Garlic Bread", "price": 3.99, "description": "Toasted bread with garlic butter"},
+        {"name": "Soup of the Day", "price": 4.99, "description": "Ask your server for today's special"}
+      ]
+    },
+    {
+      "name": "Mains",
+      "items": [
+        {"name": "Grilled Chicken", "price": 12.99, "description": "Served with rice and salad"},
+        {"name": "Beef Burger", "price": 10.99, "description": "Juicy beef patty with fries"},
+        {"name": "Veggie Pasta", "price": 9.99, "description": "Penne with marinara sauce"}
+      ]
+    },
+    {
+      "name": "Drinks",
+      "items": [
+        {"name": "Soft Drink", "price": 1.99, "description": "Coke, Sprite, or Fanta"},
+        {"name": "Fresh Juice", "price": 3.49, "description": "Orange, Mango, or Apple"}
+      ]
+    },
+    {
+      "name": "Desserts",
+      "items": [
+        {"name": "Chocolate Lava Cake", "price": 5.99, "description": "Warm cake with ice cream"},
+        {"name": "Cheesecake", "price": 4.99, "description": "Classic New York style"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Demo Diner — Orders Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --void: #02040A;
+      --gold: #C9A84C;
+      --gold-glow: rgba(201,168,76,0.08);
+      --border: rgba(201,168,76,0.15);
+      --white: #F5F0E8;
+      --muted: rgba(245,240,232,0.45);
+      --font-head: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'DM Sans', sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --pending: #F59E0B;
+      --preparing: #3B82F6;
+      --ready: #10B981;
+      --cancelled: #EF4444;
+    }
+    body {
+      background: var(--void);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-weight: 300;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    .dash-nav {
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dash-logo {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 20px;
+      color: var(--gold);
+      text-decoration: none;
+    }
+    .dash-logo span { color: var(--white); font-style: normal; }
+    .dash-nav-right {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .live-badge {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--gold-glow);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .live-dot {
+      width: 5px; height: 5px;
+      background: #10B981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .back-btn {
+      padding: 8px 18px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.3s, border-color 0.3s;
+    }
+    .back-btn:hover { color: var(--white); border-color: rgba(201,168,76,0.4); }
+
+    /* STATS */
+    .stats-bar {
+      padding: 24px 40px;
+      display: flex; gap: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .stat {
+      flex: 1;
+      padding: 20px 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--gold-glow);
+    }
+    .stat-val {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* MAIN */
+    .dash-main { padding: 32px 40px; }
+    .dash-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .dash-title {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 28px;
+      font-weight: 300;
+      color: var(--white);
+    }
+    .refresh-btn {
+      padding: 9px 20px;
+      border-radius: 100px;
+      background: var(--gold);
+      border: none;
+      color: var(--void);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .refresh-btn:hover { opacity: 0.85; }
+
+    /* FILTER TABS */
+    .filter-tabs {
+      display: flex; gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tab {
+      padding: 8px 18px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .tab:hover { color: var(--white); }
+    .tab.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--void);
+      font-weight: 500;
+    }
+
+    /* ORDERS GRID */
+    .orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .order-card {
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.012);
+      backdrop-filter: blur(12px);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      animation: cardIn 0.4s var(--ease) both;
+      transition: transform 0.3s var(--ease);
+    }
+    .order-card:hover { transform: translateY(-3px); }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .order-card::before {
+      content: '';
+      position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+      background: linear-gradient(160deg, rgba(201,168,76,0.25) 0%, transparent 50%, rgba(201,168,76,0.1) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+    }
+    .order-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .order-id {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--gold);
+    }
+    .order-time {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .status-badge {
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .status-pending { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+    .status-preparing { background: rgba(59,130,246,0.15); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); }
+    .status-ready { background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); }
+    .status-cancelled { background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+
+    .order-items { margin-bottom: 16px; }
+    .order-item-row {
+      display: flex; justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 13.5px;
+    }
+    .order-item-row:last-child { border-bottom: none; }
+    .order-item-name { color: var(--white); }
+    .order-item-price { color: var(--gold); font-weight: 500; }
+
+    .order-note {
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 16px;
+    }
+
+    .order-total {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .order-total span:first-child {
+      font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted);
+    }
+    .order-total-val {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--gold);
+    }
+
+    .status-actions {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 80px;
+    }
+    .action-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+    .action-btn.preparing-btn:hover { color: #3B82F6; border-color: #3B82F6; }
+    .action-btn.ready-btn:hover { color: #10B981; border-color: #10B981; }
+    .action-btn.cancel-btn:hover { color: #EF4444; border-color: #EF4444; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 80px 40px;
+      color: var(--muted);
+      grid-column: 1 / -1;
+    }
+    .empty-state div { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 {
+      font-family: var(--font-head);
+      font-style: italic;
+      font-size: 24px;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .empty-state p { font-size: 14px; }
+
+    @media (max-width: 768px) {
+      .stats-bar { flex-direction: column; padding: 16px 20px; }
+      .dash-main { padding: 24px 20px; }
+      .dash-nav { padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="dash-nav">
+    <a href="/" class="dash-logo">Demo <span>Diner</span></a>
+    <div class="dash-nav-right">
+      <div class="live-badge"><div class="live-dot"></div> Live Orders</div>
+      <a href="/" class="back-btn">← Back to Diner</a>
+    </div>
+  </nav>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stat"><div class="stat-val" id="statTotal">0</div><div class="stat-label">Total Orders</div></div>
+    <div class="stat"><div class="stat-val" id="statPending">0</div><div class="stat-label">Pending</div></div>
+    <div class="stat"><div class="stat-val" id="statPreparing">0</div><div class="stat-label">Preparing</div></div>
+    <div class="stat"><div class="stat-val" id="statReady">0</div><div class="stat-label">Ready</div></div>
+    <div class="stat"><div class="stat-val" id="statRevenue">$0</div><div class="stat-label">Today's Revenue</div></div>
+  </div>
+
+  <div class="dash-main">
+    <div class="dash-header">
+      <h1 class="dash-title">Incoming Orders</h1>
+      <button class="refresh-btn" onclick="loadOrders()">↻ Refresh</button>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="tab active" onclick="filterOrders('all', this)">All</button>
+      <button class="tab" onclick="filterOrders('pending', this)">Pending</button>
+      <button class="tab" onclick="filterOrders('preparing', this)">Preparing</button>
+      <button class="tab" onclick="filterOrders('ready', this)">Ready</button>
+      <button class="tab" onclick="filterOrders('cancelled', this)">Cancelled</button>
+    </div>
+
+    <div class="orders-grid" id="ordersGrid"></div>
+  </div>
+
+  <script>
+    let allOrders = [];
+    let currentFilter = 'all';
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/orders');
+        allOrders = await res.json();
+        updateStats();
+        renderOrders();
+      } catch (e) {
+        console.error('Failed to load orders:', e);
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('statTotal').textContent = allOrders.length;
+      document.getElementById('statPending').textContent = allOrders.filter(o => o.status === 'pending').length;
+      document.getElementById('statPreparing').textContent = allOrders.filter(o => o.status === 'preparing').length;
+      document.getElementById('statReady').textContent = allOrders.filter(o => o.status === 'ready').length;
+      const revenue = allOrders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + (o.total || 0), 0);
+      document.getElementById('statRevenue').textContent = '$' + revenue.toFixed(2);
+    }
+
+    function filterOrders(status, btn) {
+      currentFilter = status;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderOrders();
+    }
+
+    function renderOrders() {
+      const grid = document.getElementById('ordersGrid');
+      const filtered = currentFilter === 'all' ? allOrders : allOrders.filter(o => o.status === currentFilter);
+      const reversed = [...filtered].reverse();
+
+      if (reversed.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div>🍽️</div>
+            <h3>No orders yet</h3>
+            <p>Orders placed via Byte will appear here in real time.</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = reversed.map(order => `
+        <div class="order-card" id="card-${order.id}">
+          <div class="order-top">
+            <div>
+              <div class="order-id">Order #${order.id}</div>
+              <div class="order-time">${order.timestamp}</div>
+            </div>
+            <div class="status-badge status-${order.status}">${order.status}</div>
+          </div>
+
+          <div class="order-items">
+            ${(order.items || []).map(item => `
+              <div class="order-item-row">
+                <span class="order-item-name">${typeof item === 'object' ? item.name : item}</span>
+                <span class="order-item-price">${typeof item === 'object' && item.price ? '$' + item.price : ''}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          ${order.note ? `<div class="order-note">📝 ${order.note}</div>` : ''}
+
+          <div class="order-total">
+            <span>Total</span>
+            <span class="order-total-val">$${(order.total || 0).toFixed(2)}</span>
+          </div>
+
+          <div class="status-actions">
+            <button class="action-btn preparing-btn" onclick="updateStatus(${order.id}, 'preparing')">🔥 Preparing</button>
+            <button class="action-btn ready-btn" onclick="updateStatus(${order.id}, 'ready')">✅ Ready</button>
+            <button class="action-btn cancel-btn" onclick="updateStatus(${order.id}, 'cancelled')">✕ Cancel</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function updateStatus(orderId, status) {
+      await fetch(`/orders/${orderId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      await loadOrders();
+    }
+
+    // Auto refresh every 10 seconds
+    loadOrders();
+    setInterval(loadOrders, 10000);
+  </script>
+</body>
+</html>
