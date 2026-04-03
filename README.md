@@ -1,7 +1,14 @@
 # Byte-Restaurant-Chatbot
-
 ## Project Description
 Byte-Restaurant-Chatbot is an AI-powered chatbot designed to assist customers at Demo Diner, an upscale casual dining restaurant. It provides menu information, takes orders, and handles customer inquiries with a sophisticated and warm demeanor.
+
+## Screenshots
+
+![Landing Page](screenshots/landing.png)
+
+![Byte AI Waiter](screenshots/chatbot.png)
+
+![Orders Dashboard](screenshots/dashboard.png)
 
 ## Features
 - **Menu Assistance**: Answers questions about menu items, prices, and ingredients.
@@ -20,23 +27,23 @@ Byte-Restaurant-Chatbot is an AI-powered chatbot designed to assist customers at
 
 ## Installation
 1. Clone the repository:
-   ```bash
+```bash
    git clone https://github.com/aliii-codes/Byte-Restaurant-Chatbot.git
    cd Byte-Restaurant-Chatbot
-   ```
+```
 2. Install dependencies:
-   ```bash
+```bash
    pip install -r requirements.txt
-   ```
+```
 3. Set up environment variables:
-   ```bash
+```bash
    cp .env.example .env
    # Fill in GROQ_API_KEY in .env
-   ```
+```
 4. Run the application:
-   ```bash
+```bash
    python app.py
-   ```
+```
 
 ## Usage
 1. **Chat with Byte**: Access the chatbot via the `/` route in your browser or send POST requests to `/chat` with a JSON body containing `message` and optional `history`.
